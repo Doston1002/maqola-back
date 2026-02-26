@@ -17,10 +17,12 @@ const admin_module_1 = require("./admin/admin.module");
 const collection_module_1 = require("./collection/collection.module");
 const article_module_1 = require("./article/article.module");
 const contact_module_1 = require("./contact/contact.module");
+const app_controller_1 = require("./app.controller");
 let AppModule = class AppModule {
 };
 AppModule = __decorate([
     (0, common_1.Module)({
+        controllers: [app_controller_1.AppController],
         imports: [
             config_1.ConfigModule.forRoot(),
             mongoose_1.MongooseModule.forRootAsync({

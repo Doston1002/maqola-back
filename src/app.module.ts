@@ -8,8 +8,10 @@ import { AdminModule } from './admin/admin.module';
 import { CollectionModule } from './collection/collection.module';
 import { ArticleModule } from './article/article.module';
 import { ContactModule } from './contact/contact.module';
+import { AppController } from './app.controller';
 
 @Module({
+  controllers: [AppController],
   imports: [
     ConfigModule.forRoot(),
     MongooseModule.forRootAsync({

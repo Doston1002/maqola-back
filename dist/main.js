@@ -23,13 +23,16 @@ async function bootstrap() {
         res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
         next();
     });
+    const allowedOriginsStr = process.env.FRONTEND_ORIGIN || '';
+    const extraOrigins = allowedOriginsStr ? allowedOriginsStr.trim().split(/\s+/).filter(Boolean) : [];
+    const allowedOrigins = [
+        'https://uydatalim.uzedu.uz',
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        ...extraOrigins,
+    ];
     app.enableCors({
         origin: (origin, callback) => {
-            const allowedOrigins = [
-                'https://uydatalim.uzedu.uz',
-                'http://localhost:3000',
-                'http://127.0.0.1:3000',
-            ];
             if (!origin || allowedOrigins.includes(origin)) {
                 callback(null, true);
             }

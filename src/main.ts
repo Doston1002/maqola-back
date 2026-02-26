@@ -23,7 +23,16 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.setGlobalPrefix('api');
-  
+
+  // Root path / — 404 o‘rniga qisqa javob (API /api da)
+  app.use((req, res, next) => {
+    if (req.method === 'GET' && (req.path === '/' || req.path === '')) {
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(200).send(JSON.stringify({ status: 'ok', message: 'API ishlayapti', api: '/api' }));
+    }
+    next();
+  });
+
   // ✅ SECURITY FIX: Clickjacking + CSP
   app.use((req, res, next) => {
     res.setHeader('X-Frame-Options', 'DENY');
@@ -47,13 +56,22 @@ async function bootstrap() {
     next();
   });
   
+  // CORS: frontend domenlari (serverda FRONTEND_ORIGIN=http://localhost:3000 https://sitename.uz qo'shing)
+  const allowedOriginsStr = process.env.FRONTEND_ORIGIN || '';
+  const extraOrigins = allowedOriginsStr ? allowedOriginsStr.trim().split(/\s+/).filter(Boolean) : [];
+  const allowedOrigins = [
+    'https://uydatalim.uzedu.uz',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://teaching-science.org',
+    'https://teaching-science.org',
+    'http://www.teaching-science.org',
+    'https://www.teaching-science.org',
+    ...extraOrigins,
+  ];
+
   app.enableCors({
     origin: (origin, callback) => {
-      const allowedOrigins = [
-        'https://uydatalim.uzedu.uz',
-        'http://localhost:3000',
-        'http://127.0.0.1:3000',
-      ];
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
