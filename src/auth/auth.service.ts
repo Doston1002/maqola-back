@@ -1,0 +1,444 @@
+// import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+// import { JwtService } from '@nestjs/jwt';
+// import { InjectModel } from '@nestjs/mongoose';
+// import { compare, genSalt, hash } from 'bcryptjs';
+// import { Model } from 'mongoose';
+// import { CustomerService } from 'src/customer/customer.service';
+// import { User, UserDocument } from 'src/user/user.model';
+// import { LoginAuthDto } from './dto/login.dto';
+// import { TokenDto } from './dto/token.dto';
+
+// @Injectable()
+// export class AuthService {
+//   constructor(
+//     @InjectModel(User.name) private userModel: Model<UserDocument>,
+//     private readonly jwtService: JwtService,
+//     private readonly customerService: CustomerService,
+//   ) {}
+
+//   async register(dto: LoginAuthDto) {
+//     const existUser = await this.isExistUser(dto.email);
+//     if (existUser) throw new BadRequestException('already_exist');
+
+//     const salt = await genSalt(10);
+//     const passwordHash = await hash(dto.password, salt);
+
+//     const newUser = await this.userModel.create({
+//       ...dto,
+//       password: dto.password.length ? passwordHash : '',
+//     });
+
+//     await this.customerService.getCustomer(String(newUser._id));
+//     const token = await this.issueTokenPair(String(newUser._id));
+
+//     return { user: this.getUserField(newUser), ...token };
+//   }
+
+//   async login(dto: LoginAuthDto) {
+//     const existUser = await this.isExistUser(dto.email);
+//     if (!existUser) throw new BadRequestException('user_not_found');
+
+//     if (dto.password.length) {
+//       const currentPassword = await compare(dto.password, existUser.password);
+//       if (!currentPassword) throw new BadRequestException('incorrect_password');
+//     }
+
+//     await this.customerService.getCustomer(String(existUser._id));
+//     const token = await this.issueTokenPair(String(existUser._id));
+//     return { user: this.getUserField(existUser), ...token };
+//   }
+
+//   async getNewTokens({ refreshToken }: TokenDto) {
+//     if (!refreshToken) throw new UnauthorizedException('Please sign in!');
+
+//     const result = await this.jwtService.verifyAsync(refreshToken);
+
+//     if (!result) throw new UnauthorizedException('Invalid token or expired!');
+
+//     const user = await this.userModel.findById(result._id);
+
+//     const token = await this.issueTokenPair(String(user._id));
+//     return { user: this.getUserField(user), ...token };
+//   }
+
+//   async checkUser(email: string) {
+//     const user = await this.isExistUser(email);
+
+//     if (user) {
+//       return 'user';
+//     } else {
+//       return 'no-user';
+//     }
+//   }
+
+//   async isExistUser(email: string): Promise<UserDocument> {
+//     const existUser = await this.userModel.findOne({ email });
+//     return existUser;
+//   }
+
+//   async issueTokenPair(userId: string) {
+//     const data = { _id: userId };
+
+//     const refreshToken = await this.jwtService.signAsync(data, { expiresIn: '15d' });
+
+//     const accessToken = await this.jwtService.signAsync(data, { expiresIn: '1m' });
+
+//     return { refreshToken, accessToken };
+//   }
+
+//   getUserField(user: UserDocument) {
+//     return {
+//       id: user._id,
+//       email: user.email,
+//       fullName: user.fullName,
+//       avatar: user.avatar,
+//       role: user.role,
+//       courses: user.courses,
+//       createdAt: user.createdAt,
+//       birthday: user.birthday,
+//       bio: user.bio,
+//       job: user.job,
+//     };
+//   }
+// }
+
+
+// import { Injectable } from '@nestjs/common';
+// import { InjectModel } from '@nestjs/mongoose';
+// import { Model } from 'mongoose';
+// import { JwtService } from '@nestjs/jwt';
+// import { User } from './schemas/user.schema';
+// import { OneIdUserData } from './oneid.service';
+
+// @Injectable()
+// export class AuthService {
+//   constructor(
+//     @InjectModel(User.name) private userModel: Model<User>,
+//     private jwtService: JwtService,
+//   ) {}
+
+//   async processOneIdUser(oneIdData: OneIdUserData) {
+//     try {
+//       // OneID ma'lumotlarini User modeliga moslashtirish
+//       const mappedUserData = this.mapOneIdToUser(oneIdData);
+
+//       // PIN yoki user_id orqali mavjud foydalanuvchini qidirish
+//       let user = await this.userModel.findOne({
+//         $or: [
+//           { customerId: oneIdData.pin }, // PIN ni customerId sifatida saqlash
+//           { email: `${oneIdData.user_id}@oneid.uz` }, // OneID user_id dan email yasash
+//         ],
+//       });
+
+//       if (!user) {
+//         // Yangi foydalanuvchi yaratish
+//         user = new this.userModel(mappedUserData);
+//         await user.save();
+//       } else {
+//         // Mavjud foydalanuvchini yangilash
+//         Object.assign(user, mappedUserData);
+//         await user.save();
+//       }
+
+//       // JWT token generatsiya qilish
+//       const payload = { 
+//         sub: user._id, 
+//         email: user.email,
+//         role: user.role 
+//       };
+//       const token = this.jwtService.sign(payload);
+
+//       return {
+//         token,
+//         user: {
+//           id: user._id,
+//           email: user.email,
+//           fullName: user.fullName,
+//           role: user.role,
+//           customerId: user.customerId,
+//         },
+//       };
+//     } catch (error) {
+//       console.error('Process OneID user error:', error);
+//       throw error;
+//     }
+//   }
+
+//   private mapOneIdToUser(oneIdData: OneIdUserData): Partial<User> {
+//     // Birth date ni to'g'ri formatga o'tkazish (YYYYMMDD -> YYYY-MM-DD)
+//     const birthDate = oneIdData.birth_date 
+//       ? `${oneIdData.birth_date.slice(0, 4)}-${oneIdData.birth_date.slice(4, 6)}-${oneIdData.birth_date.slice(6, 8)}`
+//       : '';
+
+//     return {
+//       // OneID user_id dan email yaratish (yoki boshqa mantiq qo'llash mumkin)
+//       email: `${oneIdData.user_id}@oneid.uz`,
+//       fullName: oneIdData.full_name,
+//       customerId: oneIdData.pin, // PIN ni customerId sifatida saqlash
+//       birthday: birthDate,
+//       role: 'USER', // Default role (RoleUser enum dan)
+//       createdAt: new Date().toISOString(),
+//       // password OneID orqali kelganlar uchun shart emas
+//       // Agar kerak bo'lsa, random password generatsiya qilish mumkin
+//     };
+//   }
+// }
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import { InjectModel } from '@nestjs/mongoose';
+import { genSalt, hash } from 'bcryptjs';
+import { Model } from 'mongoose';
+import { CustomerService } from 'src/customer/customer.service';
+import { User, UserDocument } from 'src/user/user.model';
+import { TokenDto } from './dto/token.dto';
+import { OneIdUserData } from './oneid.service';
+import { TokenBlacklistService } from './token-blacklist.service';
+
+@Injectable()
+export class AuthService {
+  constructor(
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
+    private readonly jwtService: JwtService,
+    private readonly customerService: CustomerService,
+    private readonly tokenBlacklistService: TokenBlacklistService,
+    private readonly configService: ConfigService,
+  ) { }
+
+  /** Admin: admin@example.com / admin123 yoki .env dagi ADMIN_EMAIL / ADMIN_PASSWORD */
+  async loginWithPassword(email: string, password: string) {
+    const envEmail = this.configService.get<string>('ADMIN_EMAIL') || this.configService.get<string>('DEFAULT_ADMIN_EMAIL');
+    const envPassword = this.configService.get<string>('ADMIN_PASSWORD') || this.configService.get<string>('DEFAULT_ADMIN_PASSWORD');
+
+    const isDefaultAdmin = email === 'admin@example.com' && password === 'admin123';
+    const isEnvAdmin = envEmail && envPassword && email === envEmail && password === envPassword;
+
+    if (!isDefaultAdmin && !isEnvAdmin) {
+      throw new UnauthorizedException('Email yoki parol noto\'g\'ri');
+    }
+
+    const adminEmail = isDefaultAdmin ? 'admin@example.com' : envEmail;
+    const adminPassword = isDefaultAdmin ? 'admin123' : envPassword;
+
+    let user = await this.userModel.findOne({ email: adminEmail }).exec();
+    if (!user) {
+      const salt = await genSalt(10);
+      const passwordHash = await hash(adminPassword, salt);
+      user = await this.userModel.create({
+        email: adminEmail,
+        password: passwordHash,
+        fullName: 'Admin',
+        role: 'ADMIN',
+      });
+    } else {
+      if (user.role !== 'ADMIN') {
+        await this.userModel.updateOne({ _id: user._id }, { $set: { role: 'ADMIN' } }).exec();
+        user.role = 'ADMIN';
+      }
+    }
+
+    if (user.isBlocked) {
+      throw new UnauthorizedException('Foydalanuvchi bloklangan');
+    }
+
+    const token = await this.issueTokenPair(String(user._id));
+    return {
+      user: this.getUserField(user),
+      ...token,
+    };
+  }
+
+  // OneID uchun yangi method
+  async processOneIdUser(oneIdData: OneIdUserData) {
+    try {
+      // OneID ma'lumotlarini User modeliga moslashtirish
+      const mappedUserData = this.mapOneIdToUser(oneIdData);
+      console.log("mappedUserData", mappedUserData)
+      
+      // PIN yoki custom email orqali mavjud foydalanuvchini qidirish
+      let user = await this.userModel.findOne({
+        $or: [
+          { pin: oneIdData.pin }, // PIN ni customerId sifatida saqlash
+          { email: mappedUserData.email }, // Generated email orqali qidirish
+        ],
+      });
+      console.log("user", user)
+
+      if (!user) {
+        // Yangi foydalanuvchi yaratish
+        user = await this.userModel.create({
+          ...mappedUserData,
+          createdAt: new Date().toISOString(),
+        });
+        console.log("CREATED", user)
+      } else {
+        // Mavjud foydalanuvchini yangilash (ma'lumotlarni refresh qilish)
+        Object.assign(user, {
+          fullName: mappedUserData.fullName,
+          birthday: mappedUserData.birthday,
+          pin: mappedUserData.pin,
+        });
+        await user.save();
+      }
+
+      // ✅ BLOCK CHECK: Foydalanuvchi bloklangan bo'lsa login qilish mumkin emas
+      if (user.isBlocked) {
+        throw new UnauthorizedException('foydalanuvchi bloklangan');
+      }
+
+      // Customer yaratish yoki olish
+      await this.customerService.getCustomer(String(user._id));
+
+      // JWT token generatsiya qilish (mavjud issueTokenPair methodidan foydalanish)
+      const token = await this.issueTokenPair(String(user._id));
+
+      return {
+        user: this.getUserField(user),
+        ...token,
+      };
+    } catch (error) {
+      console.error('Process OneID user error:', error);
+      throw new BadRequestException('OneID_user_processing_failed');
+    }
+  }
+
+  // OneID ma'lumotlarini User modeliga moslashtirish
+  private mapOneIdToUser(oneIdData: OneIdUserData): Partial<User> {
+    // Birth date ni to'g'ri formatga o'tkazish (YYYYMMDD -> YYYY-MM-DD)
+    const birthDate = oneIdData.birth_date
+      ? `${oneIdData.birth_date.slice(0, 4)}-${oneIdData.birth_date.slice(4, 6)}-${oneIdData.birth_date.slice(6, 8)}`
+      : '';
+
+    // Email yaratish strategiyasi: PIN@oneid.uz yoki user_id@oneid.uz
+    // PIN ni ishlatish ko'proq unique bo'ladi
+    const email = `${oneIdData.pin}@oneid.uz`;
+
+
+    return {
+      email,
+      fullName: oneIdData.full_name,
+      pin: oneIdData.pin, // PIN ni customerId sifatida saqlash
+      birthday: birthDate,
+      role: 'USER', // Default role
+      password: '', // OneID orqali kirganlar uchun password kerak emas
+    };
+  }
+
+  async getNewTokens({ refreshToken }: TokenDto) {
+    if (!refreshToken) throw new UnauthorizedException('Please sign in!');
+
+    const result = await this.jwtService.verifyAsync(refreshToken);
+
+    if (!result) throw new UnauthorizedException('Invalid token or expired!');
+
+    const user = await this.userModel.findById(result._id);
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    // ✅ BLOCK CHECK: Foydalanuvchi bloklangan bo'lsa token yangilash mumkin emas
+    if (user.isBlocked) {
+      throw new UnauthorizedException('foydalanuvchi bloklangan');
+    }
+
+    // ✅ ROLE CHECK: Token dagi rol bilan database dagi rol mos kelishi kerak
+    const tokenRole = result.role || 'USER';
+    const dbRole = user.role || 'USER';
+    
+    if (tokenRole !== dbRole) {
+      // Agar rol o'zgarganda, yangi token generatsiya qilish
+      // Bu xavfsizlik uchun muhim - agar admin user ni USER ga o'zgartirsa, eski token ishlamaydi
+    }
+
+    const token = await this.issueTokenPair(String(user._id));
+    return { user: this.getUserField(user), ...token };
+  }
+
+
+  async isExistUser(email: string): Promise<UserDocument> {
+    const existUser = await this.userModel.findOne({ email });
+    return existUser;
+  }
+
+  async issueTokenPair(userId: string) {
+    // User ma'lumotlarini olish (rolni olish uchun)
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    // Token payload ga rol qo'shish
+    const data = { 
+      _id: userId,
+      role: user.role || 'USER' // Default rol agar bo'lmasa
+    };
+
+    const refreshToken = await this.jwtService.signAsync(data, { expiresIn: '15d' });
+
+    const accessToken = await this.jwtService.signAsync(data, { expiresIn: '1m' });
+
+    return { refreshToken, accessToken };
+  }
+
+  /**
+   * Logout - Token ni blacklist ga qo'shish
+   * @param accessToken - JWT access token
+   * @param refreshToken - JWT refresh token (optional)
+   */
+  async logout(accessToken: string, refreshToken?: string): Promise<void> {
+    try {
+      // Access token ni decode qilish va expire vaqtini olish
+      const decodedAccessToken = this.jwtService.decode(accessToken) as { exp?: number; iat?: number };
+      
+      if (decodedAccessToken && decodedAccessToken.exp) {
+        // Token expire bo'lish vaqtini hisoblash (seconds)
+        const expiresIn = decodedAccessToken.exp - Math.floor(Date.now() / 1000);
+        
+        // Agar token hali expire bo'lmagan bo'lsa, blacklist ga qo'shish
+        if (expiresIn > 0) {
+          this.tokenBlacklistService.addToBlacklist(accessToken, expiresIn);
+        }
+      }
+
+      // Refresh token ham bo'lsa, uni ham blacklist ga qo'shish
+      if (refreshToken) {
+        const decodedRefreshToken = this.jwtService.decode(refreshToken) as { exp?: number };
+        
+        if (decodedRefreshToken && decodedRefreshToken.exp) {
+          const refreshExpiresIn = decodedRefreshToken.exp - Math.floor(Date.now() / 1000);
+          
+          if (refreshExpiresIn > 0) {
+            this.tokenBlacklistService.addToBlacklist(refreshToken, refreshExpiresIn);
+          }
+        }
+      }
+    } catch (error) {
+      // Token decode qilishda xatolik bo'lsa ham, token ni blacklist ga qo'shish
+      // Bu xavfsizlik uchun muhim
+      this.tokenBlacklistService.addToBlacklist(accessToken, 3600); // 1 soat default
+      if (refreshToken) {
+        this.tokenBlacklistService.addToBlacklist(refreshToken, 3600);
+      }
+    }
+  }
+
+  getUserField(user: UserDocument) {
+    // ✅ SECURITY FIX: Role manipulation himoyasi - faqat valid rollarni qaytarish
+    const validRoles: string[] = ['ADMIN', 'INSTRUCTOR', 'USER'];
+    const userRole = user.role && validRoles.includes(user.role) ? user.role : 'USER';
+    
+    return {
+      id: user._id,
+      email: user.email,
+      fullName: user.fullName,
+      avatar: user.avatar,
+      role: userRole as 'ADMIN' | 'INSTRUCTOR' | 'USER', // Faqat valid rollarni qaytarish
+      courses: user.courses,
+      createdAt: user.createdAt,
+      birthday: user.birthday,
+      bio: user.bio,
+      job: user.job,
+    };
+  }
+}
