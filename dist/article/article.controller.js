@@ -26,18 +26,18 @@ let ArticleController = class ArticleController {
         return this.articleService.create(dto);
     }
     findAll(collectionId) {
-        return this.articleService.findAll(true, collectionId);
+        return this.articleService.findAll(false, collectionId);
     }
     search(query, year, collectionId) {
         return this.articleService.search({
             query,
             year: year ? parseInt(year, 10) : undefined,
             collectionId,
-            publicOnly: true,
+            publicOnly: false,
         });
     }
     async findBySlug(slug) {
-        const article = await this.articleService.findBySlug(slug, true);
+        const article = await this.articleService.findBySlug(slug, false);
         await this.articleService.incrementView(slug);
         return article;
     }

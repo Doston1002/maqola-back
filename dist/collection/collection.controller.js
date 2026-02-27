@@ -28,13 +28,13 @@ let CollectionController = class CollectionController {
         return this.collectionService.create(dto);
     }
     findAll() {
-        return this.collectionService.findAll(true);
+        return this.collectionService.findAll(false);
     }
     findAllAdmin() {
         return this.collectionService.findAll(false);
     }
     findBySlug(slug) {
-        return this.collectionService.findBySlug(slug, true);
+        return this.collectionService.findBySlug(slug, false);
     }
     findBySlugAdmin(slug) {
         return this.collectionService.findBySlug(slug, false);
@@ -50,8 +50,8 @@ let CollectionController = class CollectionController {
     }
     async getStats() {
         const [collectionsCount, articlesCount] = await Promise.all([
-            this.collectionService.count(true),
-            this.articleService.count(true),
+            this.collectionService.count(false),
+            this.articleService.count(false),
         ]);
         return { collectionsCount, articlesCount };
     }

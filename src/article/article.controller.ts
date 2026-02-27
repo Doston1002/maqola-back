@@ -28,7 +28,8 @@ export class ArticleController {
   @Get()
   @HttpCode(200)
   findAll(@Query('collectionId') collectionId?: string) {
-    return this.articleService.findAll(true, collectionId);
+    // Foydalanuvchi tomonda barcha maqolalar ko'rinsin
+    return this.articleService.findAll(false, collectionId);
   }
 
   @Get('search')
@@ -42,14 +43,16 @@ export class ArticleController {
       query,
       year: year ? parseInt(year, 10) : undefined,
       collectionId,
-      publicOnly: true,
+      // Foydalanuvchi qidiruvda ham barcha maqolalar bo'yicha qidirsin
+      publicOnly: false,
     });
   }
 
   @Get('slug/:slug')
   @HttpCode(200)
   async findBySlug(@Param('slug') slug: string) {
-    const article = await this.articleService.findBySlug(slug, true);
+    // Har qanday maqolani ko'rish imkoniyati (hatto qoralama bo'lsa ham)
+    const article = await this.articleService.findBySlug(slug, false);
     await this.articleService.incrementView(slug);
     return article;
   }

@@ -6,6 +6,13 @@ async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
     app.setGlobalPrefix('api');
     app.use((req, res, next) => {
+        if (req.method === 'GET' && (req.path === '/' || req.path === '')) {
+            res.setHeader('Content-Type', 'application/json');
+            return res.status(200).send(JSON.stringify({ status: 'ok', message: 'API ishlayapti', api: '/api' }));
+        }
+        next();
+    });
+    app.use((req, res, next) => {
         res.setHeader('X-Frame-Options', 'DENY');
         const contentSecurityPolicy = [
             "frame-ancestors 'none'",
@@ -29,6 +36,10 @@ async function bootstrap() {
         'https://uydatalim.uzedu.uz',
         'http://localhost:3000',
         'http://127.0.0.1:3000',
+        'http://teaching-science.org',
+        'https://teaching-science.org',
+        'http://www.teaching-science.org',
+        'https://www.teaching-science.org',
         ...extraOrigins,
     ];
     app.enableCors({

@@ -146,7 +146,7 @@ let AuthService = class AuthService {
             role: user.role || 'USER'
         };
         const refreshToken = await this.jwtService.signAsync(data, { expiresIn: '15d' });
-        const accessToken = await this.jwtService.signAsync(data, { expiresIn: '1m' });
+        const accessToken = await this.jwtService.signAsync(data, { expiresIn: '15m' });
         return { refreshToken, accessToken };
     }
     async logout(accessToken, refreshToken) {

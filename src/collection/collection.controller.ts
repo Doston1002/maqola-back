@@ -22,7 +22,8 @@ export class CollectionController {
   @Get()
   @HttpCode(200)
   findAll() {
-    return this.collectionService.findAll(true);
+    // Foydalanuvchi tomonda barcha to'plamlar ko'rinsin
+    return this.collectionService.findAll(false);
   }
 
   @Get('admin/all')
@@ -35,7 +36,8 @@ export class CollectionController {
   @Get('slug/:slug')
   @HttpCode(200)
   findBySlug(@Param('slug') slug: string) {
-    return this.collectionService.findBySlug(slug, true);
+    // Foydalanuvchi tomonda barcha to'plamlar ko'rinsin
+    return this.collectionService.findBySlug(slug, false);
   }
 
   @Get('admin/slug/:slug')
@@ -70,8 +72,9 @@ export class CollectionController {
   @HttpCode(200)
   async getStats() {
     const [collectionsCount, articlesCount] = await Promise.all([
-      this.collectionService.count(true),
-      this.articleService.count(true),
+      // Statistikada ham barcha yozuvlar hisobga olinsin
+      this.collectionService.count(false),
+      this.articleService.count(false),
     ]);
     return { collectionsCount, articlesCount };
   }
