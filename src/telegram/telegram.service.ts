@@ -39,11 +39,13 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     this.bot.on('text', async (ctx) => {
       const userChatId = ctx.chat.id;
       const text = (ctx.message.text || '').trim();
+      console.log('[Telegram] Xabar keldi, chat_id:', userChatId, 'matn:', text?.slice(0, 50));
       if (text.startsWith('/')) return; // /start, /chatid va boshqa buyruqlar boshqa handler da
       const from = ctx.from;
       const userName = [from.first_name, from.last_name].filter(Boolean).join(' ') || from.username || `ID:${from.id}`;
 
       if (String(userChatId) === String(this.adminChatId)) {
+        console.log('[Telegram] Admin xabar yubordi (reply kerak)');
         // Admin javob yubormoqda (reply)
         const replyTo = ctx.message.reply_to_message;
         if (replyTo?.message_id != null) {
@@ -63,6 +65,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       }
 
       // Oddiy foydalanuvchi savol yubordi -> admin ga yuboramiz
+      console.log('[Telegram] Foydalanuvchi savol yubordi, admin ga yuboriladi, chat_id:', userChatId);
       const adminText = `👤 Savol (chat_id: ${userChatId})\nIsm: ${userName}\n\n${text}`;
       let sentToUser = false;
       try {
@@ -70,6 +73,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         this.messageIdToUserChatId.set(sent.message_id, userChatId);
         await ctx.reply('Savolingiz qabul qilindi. Admin tez orada javob beradi.');
         sentToUser = true;
+        console.log('[Telegram] Admin ga yuborildi va foydalanuvchiga javob yuborildi, chat_id:', userChatId);
       } catch (e) {
         console.error('[Telegram] Admin ga yuborish xato:', e);
         try {

@@ -1,5 +1,11 @@
 # Telegram bot ishlamasa (javob bermasa)
 
+## Muhim: qaysi akkauntdan test qilyapsiz?
+
+Agar siz **admin** (ADMIN_CHAT_ID sizning chat_id ingiz) bo‘lsangiz va **o‘sha akkauntdan** botga xabar yuborsangiz, bot sizga "Savolingiz qabul qilindi" yubormaydi. U sizni admin deb biladi va javobida "Bu xabarga reply qiling — javob savol yuborgan foydalanuvchiga boradi" deydi.
+
+**Foydalanuvchi tarafini tekshirish uchun:** boshqa Telegram akkauntidan (ikkinchi raqam yoki do‘stingiz) botga xabar yuboring. O‘sha akkauntda "Savolingiz qabul qilindi. Admin tez orada javob beradi." chiqishi kerak.
+
 ## Asosiy sabab: bir nechta instance (409 Conflict)
 
 Telegram har bir xabarni **faqat bitta** bot instance’iga yuboradi. Agar bot **ikkita joyda** ishlasa (masalan: server + kompyuteringizda `npm run start`), yangi xabarlar tasodifan bitta instance’ga tushadi, ikkinchisi hech narsa olmaydi. Shuning uchun ba’zi xabarlarga javob keladi, ba’zilariga kelmaydi.
