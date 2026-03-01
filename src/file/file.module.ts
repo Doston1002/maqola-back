@@ -18,6 +18,7 @@ function getUploadRoot(): string {
     ServeStaticModule.forRoot({
       rootPath: getUploadRoot(),
       serveRoot: '/uploads',
+      serveStaticOptions: { index: false },
     }),
   ],
   controllers: [FileController],
