@@ -30,10 +30,16 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       return ctx.reply(WELCOME_UZ);
     });
 
+    // /chatid — chat_id ni bilish uchun (admin sozlashda yordam)
+    this.bot.command('chatid', (ctx) => {
+      return ctx.reply(`Sizning chat_id: ${ctx.chat.id}`);
+    });
+
     // Foydalanuvchidan kelgan xabar (admin emas) -> admin ga yuboramiz
     this.bot.on('text', async (ctx) => {
       const userChatId = ctx.chat.id;
-      const text = ctx.message.text;
+      const text = (ctx.message.text || '').trim();
+      if (text.startsWith('/')) return; // /start, /chatid va boshqa buyruqlar boshqa handler da
       const from = ctx.from;
       const userName = [from.first_name, from.last_name].filter(Boolean).join(' ') || from.username || `ID:${from.id}`;
 
@@ -58,13 +64,25 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
 
       // Oddiy foydalanuvchi savol yubordi -> admin ga yuboramiz
       const adminText = `👤 Savol (chat_id: ${userChatId})\nIsm: ${userName}\n\n${text}`;
+      let sentToUser = false;
       try {
         const sent = await ctx.telegram.sendMessage(this.adminChatId, adminText);
         this.messageIdToUserChatId.set(sent.message_id, userChatId);
         await ctx.reply('Savolingiz qabul qilindi. Admin tez orada javob beradi.');
+        sentToUser = true;
       } catch (e) {
         console.error('[Telegram] Admin ga yuborish xato:', e);
-        await ctx.reply('Xatolik yuz berdi. Keyinroq urinib ko\'ring.');
+        try {
+          await ctx.reply('Xatolik yuz berdi. Keyinroq urinib ko\'ring.');
+          sentToUser = true;
+        } catch (_) {}
+      }
+      if (!sentToUser) {
+        try {
+          await ctx.reply('Savol qabul qilindi. Agar javob kelmasa, keyinroq qayta yozing.');
+        } catch (_) {
+          console.error('[Telegram] Foydalanuvchiga javob yuborib bo\'lmadi, chat_id:', userChatId);
+        }
       }
     });
 
