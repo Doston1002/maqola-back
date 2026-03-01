@@ -5,12 +5,6 @@ import { Telegraf } from 'telegraf';
 const WELCOME_UZ = `Assalomu alaykum! Global Journal of Teaching and Science botiga xush kelibsiz.
 Savolingizni yozing — admin tez orada javob beradi.`;
 
-const WELCOME_RU = `Здравствуйте! Добро пожаловать в бот Global Journal of Teaching and Science.
-Напишите свой вопрос — администратор ответит в ближайшее время.`;
-
-const WELCOME_EN = `Hello! Welcome to Global Journal of Teaching and Science bot.
-Send your question — admin will reply soon.`;
-
 @Injectable()
 export class TelegramService implements OnModuleInit, OnModuleDestroy {
   private bot: Telegraf | null = null;
@@ -77,8 +71,15 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     try {
       await this.bot.launch();
       console.log('[Telegram] Bot ishga tushdi: @pinnacleSciencebot');
-    } catch (e) {
-      console.error('[Telegram] Bot ishga tushmadi:', e);
+    } catch (err: unknown) {
+      const ex = err as { response?: { error_code?: number } };
+      if (ex?.response?.error_code === 409) {
+        console.warn(
+          "[Telegram] Bot boshqa joyda ishlayapti (Conflict). Faqat bitta instance ishlashi kerak.",
+        );
+      } else {
+        console.error('[Telegram] Bot ishga tushmadi:', err);
+      }
     }
   }
 
