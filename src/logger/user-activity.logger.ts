@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { existsSync, appendFileSync, mkdirSync } from 'fs';
+import { existsSync, appendFile, mkdirSync } from 'fs';
 import { join } from 'path';
 
 @Injectable()
@@ -8,17 +8,12 @@ export class UserActivityLogger {
   private readonly logFile = join(this.logDir, 'users-access.log');
 
   constructor() {
-    // Log papkasini yaratish (agar mavjud bo'lmasa)
     if (!existsSync(this.logDir)) {
       try {
         mkdirSync(this.logDir, { recursive: true, mode: 0o755 });
-        console.log(`✅ Log papkasi yaratildi: ${this.logDir}`);
-      } catch (error) {
-        console.error('❌ Log papkasini yaratishda xatolik:', error);
-        console.error('Iltimos, qo\'lda yarating: sudo mkdir -p /var/log/users-log && sudo chmod 755 /var/log/users-log');
+      } catch {
+        // Serverda qo'lda: sudo mkdir -p /var/log/users-log
       }
-    } else {
-      console.log(`✅ Log papkasi mavjud: ${this.logDir}`);
     }
   }
 
@@ -65,9 +60,9 @@ export class UserActivityLogger {
       // Format: IP - - [DATE] "METHOD URL HTTP_VERSION" STATUS SIZE "REFERER" "USER_AGENT" "EMAIL" "USER_ID" "FULL_NAME" "ROLE" "ACTION" "MESSAGE" "ERROR"
       const logLine = `${ip} - - [${dateStr}] "${method} ${url} HTTP/1.1" ${statusCode} ${responseSize} "${referer}" "${userAgent}" "${email}" "${userId}" "${fullName}" "${role}" "${action}" "${message}" "${error}"\n`;
 
-      appendFileSync(this.logFile, logLine, { encoding: 'utf8', flag: 'a' });
-    } catch (error) {
-      console.error('Log yozishda xatolik:', error);
+      appendFile(this.logFile, logLine, { encoding: 'utf8', flag: 'a' }, () => {});
+    } catch {
+      // Log xatosi so'rovni sekinlashtirmasin
     }
   }
 
@@ -103,9 +98,9 @@ export class UserActivityLogger {
       // Nginx formatida log
       const logLine = `${ip} - - [${dateStr}] "${method} ${url} HTTP/1.1" ${statusCode} ${data.email.length} "-" "${userAgent}" "${data.email}" "${userId}" "${fullName}" "${role}" "${data.action}" "${error}"\n`;
 
-      appendFileSync(this.logFile, logLine, { encoding: 'utf8', flag: 'a' });
-    } catch (error) {
-      console.error('Log yozishda xatolik:', error);
+      appendFile(this.logFile, logLine, { encoding: 'utf8', flag: 'a' }, () => {});
+    } catch {
+      // Log xatosi so'rovni sekinlashtirmasin
     }
   }
 
