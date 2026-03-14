@@ -67,6 +67,8 @@ async function bootstrap() {
     'https://teaching-science.org',
     'http://www.teaching-science.org',
     'https://www.teaching-science.org',
+    'http://api.teaching-science.org',
+    'https://api.teaching-science.org',
     'https://maqola-frond-j8c9.vercel.app',
     // Server IP (89.39.95.12) — frontend shu serverda bo'lsa
     'http://89.39.95.12',
