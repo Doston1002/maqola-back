@@ -56,38 +56,11 @@ async function bootstrap() {
     next();
   });
   
-  // CORS: frontend domenlari (serverda FRONTEND_ORIGIN=https://sitename.uz qo'shing)
-  const allowedOriginsStr = process.env.FRONTEND_ORIGIN || '';
-  const extraOrigins = allowedOriginsStr ? allowedOriginsStr.trim().split(/\s+/).filter(Boolean) : [];
-  const allowedOrigins = [
-    'https://uydatalim.uzedu.uz',
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'http://teaching-science.org',
-    'https://teaching-science.org',
-    'http://www.teaching-science.org',
-    'https://www.teaching-science.org',
-    'http://api.teaching-science.org',
-    'https://api.teaching-science.org',
-    'https://maqola-frond-j8c9.vercel.app',
-    // Server IP (89.39.95.12) — frontend shu serverda bo'lsa
-    'http://89.39.95.12',
-    'https://89.39.95.12',
-    'http://89.39.95.12:3000',
-    'https://89.39.95.12:3000',
-    'http://89.39.95.12:80',
-    'https://89.39.95.12:443',
-    ...extraOrigins,
-  ];
-
+  // CORS: barcha originlarga ruxsat (502 / CORS xatolarini bartaraf etish uchun)
   app.enableCors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        console.warn('[CORS] Ruxsat berilmagan origin:', origin);
-        callback(new Error('Not allowed by CORS'));
-      }
+      // So'rov bevosita (Postman, curl) yoki har qanday saytdan — ruxsat
+      callback(null, origin || true);
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     credentials: true,
