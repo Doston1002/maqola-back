@@ -144,19 +144,20 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       }
     });
 
-    try {
-      await this.bot.launch();
-      console.log('[Telegram] Bot ishga tushdi: @pinnacleSciencebot');
-    } catch (err: unknown) {
-      const ex = err as { response?: { error_code?: number } };
-      if (ex?.response?.error_code === 409) {
-        console.warn(
-          "[Telegram] Bot boshqa joyda ishlayapti (Conflict). Faqat bitta instance ishlashi kerak.",
-        );
-      } else {
-        console.error('[Telegram] Bot ishga tushmadi:', err);
-      }
-    }
+    // Botni await qilmasdan ishga tushiramiz — HTTP server (port 8000) bloklanmasin
+    this.bot
+      .launch()
+      .then(() => console.log('[Telegram] Bot ishga tushdi: @pinnacleSciencebot'))
+      .catch((err: unknown) => {
+        const ex = err as { response?: { error_code?: number } };
+        if (ex?.response?.error_code === 409) {
+          console.warn(
+            "[Telegram] Bot boshqa joyda ishlayapti (Conflict). Faqat bitta instance ishlashi kerak.",
+          );
+        } else {
+          console.error('[Telegram] Bot ishga tushmadi:', err);
+        }
+      });
   }
 
   async onModuleDestroy() {
