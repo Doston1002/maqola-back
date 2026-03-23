@@ -35,6 +35,20 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     return this.adminChatIds.has(String(chatId));
   }
 
+  /** Admin chat_id lariga xabar yuborish (xatolik bo'lsa davom etadi). */
+  private async broadcastToAdmins(
+    telegram: Telegraf['telegram'],
+    text: string,
+  ): Promise<void> {
+    for (const adminId of this.adminChatIds) {
+      try {
+        await telegram.sendMessage(adminId, text);
+      } catch (e) {
+        console.error('[Telegram] Admin log yuborishda xato, chat_id:', adminId, e);
+      }
+    }
+  }
+
   /** Foydalanuvchi majburiy kanalda ekanligini tekshiramiz (adminlar tekshiruvdan o'tkazilmaydi) */
   private async isChannelMember(userId: number): Promise<boolean> {
     if (!this.bot || !this.channelUsername) return true; // kanal sozlanmagan bo'lsa cheklov yo'q
@@ -105,6 +119,14 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           if (targetUserChatId != null) {
             try {
               await ctx.telegram.sendMessage(targetUserChatId, `📩 Javob:\n\n${text}`);
+              const adminName =
+                [ctx.from?.first_name, ctx.from?.last_name].filter(Boolean).join(' ') ||
+                ctx.from?.username ||
+                `ID:${ctx.from?.id ?? 'unknown'}`;
+              await this.broadcastToAdmins(
+                ctx.telegram,
+                `✅ Javob foydalanuvchiga yuborildi\nAdmin: ${adminName}\nFoydalanuvchi chat_id: ${targetUserChatId}\n\n${text}`,
+              );
               await ctx.reply('✅ Javob foydalanuvchiga yuborildi.');
             } catch (e) {
               await ctx.reply('❌ Foydalanuvchiga yuborib bo\'lmadi (bloklagan yoki xato).');
